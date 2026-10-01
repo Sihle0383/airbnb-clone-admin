@@ -1,0 +1,62 @@
+[
+  {
+    "id": 1,
+    "location": "Cape Town",
+    "title": "Beachfront Villa in Camps Bay",
+    "description": "Stunning ocean views, 3 bedrooms",
+    "price": 2500,
+    "maxGuests": 6,
+    "category": "Beach",
+    "img": "https://images.unsplash.com/photo-1512917774080-9991f1c4c750"
+  },
+  {
+    "id": 2,
+    "location": "Johannesburg",
+    "title": "Modern Loft in Sandton",
+    "description": "Stylish loft in the heart of Joburg",
+    "price": 1200,
+    "maxGuests": 2,
+    "category": "City",
+    "img": "https://images.unsplash.com/photo-1522708323590-d24dbb6b0267"
+  },
+  {
+    "id": 3,
+    "location": "Durban",
+    "title": "Seaside Apartment - Durban",
+    "description": "Walk to the beach, perfect for families",
+    "price": 900,
+    "maxGuests": 4,
+    "category": "Beach",
+    "img": "https://images.unsplash.com/photo-1499793983690-e29da59ef1c2"
+  },
+  {
+    "id": 4,
+    "location": "Cape Town",
+    "title": "Table Mountain Cabin",
+    "description": "Cozy cabin with mountain views",
+    "price": 1800,
+    "maxGuests": 3,
+    "category": "Countryside",
+    "img": "https://images.unsplash.com/photo-1449824913935-59a10b8d2000"
+  },
+  {
+    "id": 5,
+    "location": "Pretoria",
+    "title": "Garden Cottage in Pretoria",
+    "description": "Quiet and private",
+    "price": 650,
+    "maxGuests": 2,
+    "category": "Countryside",
+    "img": "https://images.unsplash.com/photo-1564013799919-ab600027ffc6"
+  },
+  {
+    "id": 6,
+    "location": "Knysna",
+    "title": "Lagoon House - Knysna",
+    "description": "Luxury house on the lagoon",
+    "price": 3500,
+    "maxGuests": 8,
+    "category": "Beach",
+    "img": "https://images.unsplash.com/photo-1600596542815-ffad4c1539a9"
+  }
+]

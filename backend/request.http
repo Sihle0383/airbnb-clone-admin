@@ -1,0 +1,30 @@
+#GET ALL USERS
+GET http://localhost:5000/users/
+###
+
+# GET A SINGLE USER
+GET http://localhost:5000/users/2
+###
+
+# REGISTER A USER
+POST http://localhost:5000/register
+content-type: application/json
+
+{
+  "email": "olivier@email.com",
+  "password": "bestPassw0rd"
+}
+###
+
+
+# GET ALL BOOKINGS
+POST http://localhost:5000/BOOKINGS/
+###
+
+POST http://localhost:5000/posts
+content-type: application/json
+
+{
+  "title": "airbnb clone",
+  "author": "patrick"
+}

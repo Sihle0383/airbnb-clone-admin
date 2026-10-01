@@ -1,0 +1,95 @@
+.search-wrapper {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  margin-top: 20px;
+}
+
+.search-bar {
+  display: flex;
+  align-items: center;
+  background: white; /* CHANGED FROM RED */
+  border: 1px solid #dddddd;
+  border-radius: 50px;
+  padding: 7px;
+  width: 850px;
+  max-width: 95%;
+  box-shadow: 0 1px 2px rgba(0,0,0,0.08);
+  transition: box-shadow 0.2s;
+}
+
+.search-bar:hover {
+  box-shadow: 0 4px 12px rgba(0,0,0,0.12);
+}
+
+.search-item {
+  flex: 1;
+  padding: 10px 24px;
+  border-radius: 50px;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+/* Default hover = grey */
+.search-item:hover {
+  background: #ebebeb;
+}
+
+/* When JS sets hovered = white with shadow like real Airbnb */
+.search-item.hovered {
+  background: white;
+  box-shadow: 0 6px 20px rgba(0,0,0,0.15);
+}
+
+.label {
+  display: block;
+  font-size: 12px;
+  font-weight: 700;
+}
+
+.sub {
+  display: block;
+  font-size: 14px;
+  color: #717171;
+  margin-top: 2px;
+}
+
+.divider {
+  width: 1px;
+  height: 32px;
+  background: #dddddd;
+  transition: opacity 0.2s;
+}
+
+.divider.hide {
+  opacity: 0;
+}
+
+.guests-item {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.guests-input {
+  width: 40px;
+  border: none;
+  background: transparent;
+  outline: none;
+  font-size: 14px;
+}
+
+.search-btn {
+  background: #ff385c!important;
+  color: white!important;
+  border-radius: 25px!important;
+  text-transform: none!important;
+  padding: 8px 18px!important;
+}
+
+.calendar-wrapper {
+  margin-top: 20px;
+  border-radius: 20px;
+  overflow: hidden;
+  box-shadow: 0 6px 20px rgba(0,0,0,0.2);
+}

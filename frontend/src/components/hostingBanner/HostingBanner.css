@@ -1,0 +1,72 @@
+.hosting__section {
+  max-width: 1760px;
+  margin: 60px auto;
+  padding: 0 80px;
+}
+
+.hosting__card {
+  position: relative;
+  width: 100%;
+  height: 520px;
+  border-radius: 16px;
+  overflow: hidden;
+}
+
+.hosting__img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.hosting__overlay {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  padding-left: 80px;
+  background: linear-gradient(to right, rgba(0,0,0,0.5) 0%, rgba(0,0,0,0.1) 50%, transparent 100%);
+}
+
+.hosting__overlay h1 {
+  color: white;
+  font-size: 64px;
+  font-weight: 700;
+  line-height: 1.05;
+  margin-bottom: 32px;
+}
+
+.hosting__btn {
+  background: white;
+  color: #222;
+  border: none;
+  padding: 14px 24px;
+  border-radius: 8px;
+  font-weight: 600;
+  font-size: 16px;
+  width: fit-content;
+  cursor: pointer;
+}
+
+.hosting__btn:hover {
+  background: #f7f7f7;
+}
+
+@media (max-width: 768px) {
+  .hosting__section {
+    padding: 0 24px;
+    margin: 30px auto;
+  }
+  .hosting__card {
+    height: 400px;
+  }
+  .hosting__overlay {
+    padding-left: 32px;
+  }
+  .hosting__overlay h1 {
+    font-size: 36px;
+  }
+}

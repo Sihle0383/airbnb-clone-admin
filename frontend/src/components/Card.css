@@ -1,0 +1,18 @@
+.card {
+  border-radius: 12px;
+  overflow: hidden;
+  cursor: pointer;
+  transition: transform 0.2s;
+  box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+}
+.card:hover { transform: scale(1.02); }
+.card img { width: 100%; height: 200px; object-fit: cover; }
+.card__info { padding: 12px; }
+
+.card img {
+  width: 100%;
+  height: 180px;
+  object-fit: cover;
+  border-radius: 12px 12px 0 0;
+  background: #eee; /* shows gray instead of broken icon while loading */
+}
