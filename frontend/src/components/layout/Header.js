@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import "./Header.css";
 import { DateRange } from "react-date-range";
 import "react-date-range/dist/styles.css";
@@ -10,7 +10,7 @@ import AccountCircleIcon from "@mui/icons-material/AccountCircle";
 import { useNavigate, Link, useLocation } from "react-router-dom";
 import AuthModal from './AuthModal';
 
-function Header({ setFiltered }) {
+function Header({ setFiltered, listings }) {
   const navigate = useNavigate();
   const locationPath = useLocation();
   const [scrolled, setScrolled] = useState(false);
@@ -67,43 +67,33 @@ function Header({ setFiltered }) {
     if (token) navigate('/admin'); else navigate('/admin/login');
   };
 
-  // FIXED: Click location -> straight to filtered listings
+  // ✅ FIXED - now takes you STRAIGHT to listings + filters by location
   const handleHotelSelect = async (h) => {
     setSelectedHotel(h);
     setShowHotels(false);
     setShowDates(false);
     setShowGuests(false);
 
-    const params = new URLSearchParams();
-    params.append("location", h);
-    const totalGuests = guests.adults + guests.children;
-    if (totalGuests > 0) params.append("guests", totalGuests);
-
     try {
-      // Fetch ONLY that location
-      const res = await fetch(`http://localhost:5000/api/search?${params}`);
+      // FIX 1: Use existing working endpoint, not /api/search (which you don't have)
+      const res = await fetch(`http://localhost:5000/api/accommodations?location=${encodeURIComponent(h)}`);
       const data = await res.json();
 
-      if(setFiltered) setFiltered(data);
-
-      // If you are not on home page, go to home with filter
-      if (locationPath.pathname!== "/") {
-        navigate(`/?location=${encodeURIComponent(h)}`);
+      if(setFiltered && Array.isArray(data)){
+        setFiltered(data); // for Home page filter
       }
 
-      // Take straight to listings (your listings section)
-      setTimeout(() => {
-        const listingsSection = document.getElementById("listings") || document.querySelector(".listings");
-        if (listingsSection) {
-          listingsSection.scrollIntoView({ behavior: "smooth" });
-        } else {
-          window.scrollTo({ top: 600, behavior: "smooth" });
-        }
-      }, 100);
+      // FIX 2: Navigate STRAIGHT to Location Page with filtered listings
+      navigate(`/location/${encodeURIComponent(h)}`);
 
-    } catch (e) { console.log(e); }
+    } catch (e) {
+      console.log("Filter error:", e);
+      // Even if fetch fails, still navigate so user sees page
+      navigate(`/location/${encodeURIComponent(h)}`);
+    }
   };
 
+  // ✅ FIXED search button - also filters
   const handleSearch = async () => {
     const params = new URLSearchParams();
     if (selectedHotel) params.append("location", selectedHotel);
@@ -111,13 +101,34 @@ function Header({ setFiltered }) {
     if (totalGuests > 0) params.append("guests", totalGuests);
     if (dates[0].startDate) params.append("checkIn", dates[0].startDate.toISOString().split('T')[0]);
     if (dates[0].endDate) params.append("checkOut", dates[0].endDate.toISOString().split('T')[0]);
+
     try {
-      const res = await fetch(`http://localhost:5000/api/search?${params}`);
+      // Use accommodations endpoint which exists
+      const loc = selectedHotel? `?location=${encodeURIComponent(selectedHotel)}` : "";
+      const res = await fetch(`http://localhost:5000/api/accommodations${loc}`);
       const data = await res.json();
-      if(setFiltered) setFiltered(data);
+
+      let filtered = Array.isArray(data)? data : [];
+
+      // Also filter by guests on frontend if needed
+      if(totalGuests > 0){
+        filtered = filtered.filter(l =>!l.guests || Number(l.guests) >= totalGuests);
+      }
+
+      if(setFiltered) setFiltered(filtered);
+
       setShowDates(false); setShowHotels(false); setShowGuests(false);
-      if (locationPath.pathname!== "/") navigate("/");
-      window.scrollTo({ top: 600, behavior: "smooth" });
+
+      if (selectedHotel) {
+        navigate(`/location/${encodeURIComponent(selectedHotel)}`);
+      } else {
+        if (locationPath.pathname!== "/") navigate("/");
+        setTimeout(() => {
+          const listingsSection = document.getElementById("listings") || document.querySelector(".listings");
+          if (listingsSection) listingsSection.scrollIntoView({ behavior: "smooth" });
+          else window.scrollTo({ top: 600, behavior: "smooth" });
+        }, 100);
+      }
     } catch (e) { console.log(e); }
   };
 

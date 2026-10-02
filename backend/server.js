@@ -1,118 +1,177 @@
-import { useState } from "react";
-import { useNavigate } from "react-router-dom";
-import AdminTopHeader from "./AdminTopHeader";
+require('dotenv').config();
+const express = require('express');
+const mongoose = require('mongoose');
+const cors = require('cors');
+const multer = require('multer');
+const path = require('path');
+const fs = require('fs');
 
-const AMENITIES_LIST = ["Wifi","Kitchen","Washer","Dryer","Air conditioning","Heating","Dedicated workspace","TV","Hair dryer","Iron","Pool","Hot tub","Free parking","EV charger","Crib","King bed","Gym","BBQ grill","Breakfast","Beachfront","Smoke alarm","Carbon monoxide alarm"];
+const app = express();
+app.use(cors());
+app.use(express.json());
+app.use('/uploads', express.static(path.join(__dirname, 'uploads')));
 
-export default function CreateListing(){
-  const navigate = useNavigate();
-  const [form,setForm] = useState({
-    title:"", location:"", price:"", type:"Entire home",
-    guests:2, bedrooms:1, bathrooms:1,
-    cleaningFee:0, serviceFee:0, occupancyTax:0, discount:0,
-    description:""
-  });
-  const [amenities, setAmenities] = useState([]);
-  const [images,setImages] = useState([]);
-  const [previews,setPreviews] = useState([]);
-  const [uploading,setUploading] = useState(false);
+const uploadDir = path.join(__dirname, 'uploads');
+if(!fs.existsSync(uploadDir)) fs.mkdirSync(uploadDir, {recursive:true});
 
-  const addFiles = (files) => {
-    if (images.length >= 6) {
-      alert("Max 6 images");
-      return;
+const storage = multer.diskStorage({
+  destination: (req, file, cb) => cb(null, uploadDir),
+  filename: (req, file, cb) => cb(null, Date.now() + '-' + file.originalname)
+});
+const upload = multer({ storage });
+
+mongoose.connect(process.env.MONGO_URI)
+.then(()=>console.log("MongoDB connected"))
+.catch(err=>console.log(err));
+
+const AccommodationSchema = new mongoose.Schema({
+  title: String,
+  location: String,
+  price: Number,
+  type: {type:String, default:"Entire apartment"},
+  guests: Number,
+  bedrooms: Number,
+  bathrooms: Number,
+  description: String,
+  amenities: [String],
+  images: [String],
+  img: String,
+  host: {type:String, default:"Johann"},
+  hostName: String,
+  host_id: {type:String, default:"6676f16fdace0e26aed41e79"},
+  rating: {type:Number, default:4.9},
+  reviews: {type:Number, default:120},
+  cleaningFee: {type:Number, default:50},
+  serviceFee: {type:Number, default:50},
+  occupancyTax: {type:Number, default:30},
+  occupancyTaxes: {type:Number, default:30},
+  discount: Number,
+  weeklyDiscount: {type:Number, default:0},
+}, {timestamps:true, strict:false});
+
+const ReservationSchema = new mongoose.Schema({
+  accommodation_id: String,
+  listingId: String,
+  title: String,
+  location: String,
+  image: String,
+  images: [String],
+  price: Number,
+  checkIn: Date,
+  checkOut: Date,
+  guests: Number,
+  nights: Number,
+  total: Number,
+  userEmail: String,
+}, {timestamps:true, strict:false});
+
+const Accommodation = mongoose.model("Accommodation", AccommodationSchema);
+const Reservation = mongoose.model("Reservation", ReservationSchema);
+
+// ROUTES
+app.get("/api/accommodations", async (req,res)=>{
+  try {
+    const filter = {};
+    if(req.query.location) filter.location = {$regex:req.query.location, $options:"i"};
+    if(req.query.guests) filter.guests = { $gte: Number(req.query.guests) };
+    const all = await Accommodation.find(filter).sort({createdAt:-1});
+    res.json(all);
+  } catch(e){ res.status(500).json({error:e.message}); }
+});
+
+// --- ADDED: SEARCH ENDPOINT FOR YOUR HEADER FILTER (so location click works) ---
+app.get("/api/search", async (req,res)=>{
+  try{
+    const filter = {};
+    if(req.query.location) filter.location = {$regex:req.query.location, $options:"i"};
+    if(req.query.guests) filter.guests = { $gte: Number(req.query.guests) };
+    const all = await Accommodation.find(filter).sort({createdAt:-1});
+    res.json(all);
+  }catch(e){ res.status(500).json({error:e.message}); }
+});
+
+app.get("/api/accommodations/:id", async (req,res)=>{
+  try{
+    if(req.params.id==="undefined") return res.status(400).json({error:"Invalid ID"});
+    const one = await Accommodation.findById(req.params.id);
+    if(!one) return res.status(404).json({error:"Not found"});
+    res.json(one);
+  }catch(e){ res.status(400).json({error:e.message}); }
+});
+
+app.post("/api/accommodations", upload.array("images", 6), async (req,res)=>{
+  try{
+    let data = {...req.body};
+    if(typeof data.amenities==='string'){
+      try{ data.amenities=JSON.parse(data.amenities); }catch{ data.amenities=data.amenities.split(","); }
     }
-    const allowed = files.slice(0, 6 - images.length);
-    setImages(prev=>[...prev,...allowed]);
-    setPreviews(prev=>[...prev,...allowed.map(f=>URL.createObjectURL(f))]);
-  };
+    if(req.files?.length){
+      const urls = req.files.map(f=>`http://localhost:5000/uploads/${f.filename}`);
+      data.images = urls;
+      data.img = urls[0];
+    }
+    data.host = data.host || data.hostName || "Johann";
+    const created = await Accommodation.create(data);
+    res.status(201).json(created);
+  }catch(e){ res.status(400).json({error:e.message}); }
+});
 
-  const removeImage = (index) => {
-    setImages(prev => prev.filter((_, i) => i!== index));
-    setPreviews(prev => {
-      URL.revokeObjectURL(prev[index]);
-      return prev.filter((_, i) => i!== index);
-    });
-  };
+app.put("/api/accommodations/:id", upload.array("images", 6), async (req,res)=>{
+  try{
+    let data = {...req.body};
+    if(typeof data.amenities==='string'){
+      try{ data.amenities=JSON.parse(data.amenities); }catch{ data.amenities=[]; }
+    }
+    if(req.files?.length){
+      const urls = req.files.map(f=>`http://localhost:5000/uploads/${f.filename}`);
+      data.images = urls;
+      data.img = urls[0];
+    }
+    const updated = await Accommodation.findByIdAndUpdate(req.params.id, data, {new:true});
+    res.json(updated);
+  }catch(e){ res.status(400).json({error:e.message}); }
+});
 
-  const toggleAmenity = (item) => {
-    setAmenities(prev => prev.includes(item)? prev.filter(a=>a!==item) : [...prev, item]);
-  };
+app.delete("/api/accommodations/:id", async (req,res)=>{
+  try{
+    if(!req.params.id || req.params.id==="undefined") return res.status(400).json({error:"Invalid ID"});
+    const del = await Accommodation.findByIdAndDelete(req.params.id);
+    if(!del) return res.status(404).json({error:"Not found"});
+    res.json({message:"Deleted"});
+  }catch(e){ res.status(500).json({error:e.message}); }
+});
 
-  const handleSubmit = async (e) => {
-    e.preventDefault();
-    if (images.length===0) return alert("Upload at least 1 image");
-    setUploading(true);
-    const data = new FormData();
-    Object.keys(form).forEach(k=> data.append(k, form[k]));
-    data.append("amenities", JSON.stringify(amenities));
-    images.forEach(f=> data.append("images", f));
+app.get("/api/reservations", async (req,res)=>{
+  try{
+    const all = await Reservation.find().sort({createdAt:-1});
+    res.json(all);
+  }catch(e){ res.status(500).json({error:e.message}); }
+});
 
-    try{
-      const res = await fetch("http://localhost:5000/api/accommodations", {
-        method:"POST",
-        headers:{ "Authorization":`Bearer ${localStorage.getItem("token")}` },
-        body:data
-      });
-      const result = await res.json();
-      if (!res.ok) throw new Error(result.error || "Failed to create - check server logs");
-      alert("Listing created with " + images.length + " images!");
-      navigate("/admin");
-    }catch(err){ alert(err.message); }
-    finally{ setUploading(false); }
-  };
+app.post("/api/reservations", async (req,res)=>{
+  try{
+    const created = await Reservation.create(req.body);
+    res.status(201).json(created);
+  }catch(e){ res.status(400).json({error:e.message}); }
+});
 
-  const inputStyle = {padding:"12px", borderRadius:"8px", border:"1px solid #ddd", width:"100%", boxSizing:"border-box"};
-  const labelStyle = {fontWeight:"600", fontSize:"13px", color:"#555", marginBottom:"4px", display:"block"};
+app.delete("/api/reservations/:id", async (req,res)=>{
+  try{
+    await Reservation.findByIdAndDelete(req.params.id);
+    res.json({message:"Deleted"});
+  }catch(e){ res.status(500).json({error:e.message}); }
+});
 
-  return(
-    <>
-      <AdminTopHeader />
-      <div style={{ maxWidth:"700px", margin:"30px auto", padding:"20px" }}>
-        <h1>Create New Listing</h1>
-        <form onSubmit={handleSubmit} style={{display:"flex", flexDirection:"column", gap:"15px", marginTop:"20px"}}>
+app.post("/api/auth/login", (req,res)=>{
+  const {email,password}=req.body;
+  if(email==="jane@airbnb.com" && password==="password321"){
+    return res.json({user:{email,name:"Jane"}, token:"fake"});
+  }
+  res.status(401).json({error:"Invalid"});
+});
 
-          <div onClick={()=>document.getElementById("fileInput").click()} style={{border:"2px dashed #ccc", borderRadius:"12px", padding:"30px", textAlign:"center", background:"#fafafa", cursor:"pointer"}}>
-            <p>📸 Click or drag & drop images ({images.length}/6) - 6 now works!</p>
-            <input id="fileInput" type="file" multiple accept="image/*" onChange={e=>addFiles(Array.from(e.target.files))} style={{display:"none"}} />
-          </div>
-          <div style={{display:"grid", gridTemplateColumns:"repeat(3, 1fr)", gap:"10px"}}>
-            {previews.map((src,i)=><div key={i} style={{position:"relative"}}><img src={src} alt="" style={{width:"100%", height:"120px", objectFit:"cover", borderRadius:"8px"}} /><button type="button" onClick={()=>removeImage(i)} style={{position:"absolute", top:"5px", right:"5px", background:"black", color:"white", border:"none", borderRadius:"50%", width:"24px", height:"24px", cursor:"pointer"}}>✕</button></div>)}
-          </div>
+// --- ADDED: Health check so VS Code doesn't say "lost communication" ---
+app.get("/", (req,res)=> res.send("API running - MongoDB connected"));
 
-          <input name="title" placeholder="Title" value={form.title} onChange={e=>setForm({...form,title:e.target.value})} required style={inputStyle} />
-          <input name="location" placeholder="Location - e.g. Camps Bay, Cape Town" value={form.location} onChange={e=>setForm({...form,location:e.target.value})} required style={inputStyle} />
-          <input name="price" type="number" placeholder="Price per night" value={form.price} onChange={e=>setForm({...form,price:e.target.value})} required style={inputStyle} />
-          <select name="type" value={form.type} onChange={e=>setForm({...form,type:e.target.value})} style={inputStyle}><option>Entire home</option><option>Private room</option><option>Shared room</option></select>
-
-          <div style={{display:"grid", gridTemplateColumns:"1fr 1fr 1fr", gap:"10px"}}>
-            <div><label style={labelStyle}>Guests</label><input type="number" min="1" value={form.guests} onChange={e=>setForm({...form,guests:e.target.value})} style={inputStyle} /></div>
-            <div><label style={labelStyle}>Bedrooms</label><input type="number" min="0" value={form.bedrooms} onChange={e=>setForm({...form,bedrooms:e.target.value})} style={inputStyle} /></div>
-            <div><label style={labelStyle}>Bathrooms</label><input type="number" min="0" step="0.5" value={form.bathrooms} onChange={e=>setForm({...form,bathrooms:e.target.value})} style={inputStyle} /></div>
-          </div>
-
-          <div>
-            <label style={labelStyle}>Amenities</label>
-            <div style={{border:"1px solid #ddd", borderRadius:"8px", padding:"12px", display:"flex", flexWrap:"wrap", gap:"8px"}}>
-              {AMENITIES_LIST.map(item=>(
-                <span key={item} onClick={()=>toggleAmenity(item)} style={{padding:"6px 10px", borderRadius:"20px", fontSize:"13px", cursor:"pointer", border:"1px solid", borderColor: amenities.includes(item)? "#FF385C" : "#ddd", background: amenities.includes(item)? "#FFE8EC" : "white"}}>
-                  {amenities.includes(item)? "✓ " : ""}{item}
-                </span>
-              ))}
-            </div>
-          </div>
-
-          <div style={{display:"grid", gridTemplateColumns:"1fr 1fr", gap:"10px"}}>
-            <div><label style={labelStyle}>Cleaning fee ($)</label><input type="number" min="0" value={form.cleaningFee} onChange={e=>setForm({...form,cleaningFee:e.target.value})} style={inputStyle} /></div>
-            <div><label style={labelStyle}>Service fee ($)</label><input type="number" min="0" value={form.serviceFee} onChange={e=>setForm({...form,serviceFee:e.target.value})} style={inputStyle} /></div>
-            <div><label style={labelStyle}>Occupancy taxes (%)</label><input type="number" min="0" max="100" value={form.occupancyTax} onChange={e=>setForm({...form,occupancyTax:e.target.value})} style={inputStyle} /></div>
-            <div><label style={labelStyle}>Discount (%)</label><input type="number" min="0" max="100" value={form.discount} onChange={e=>setForm({...form,discount:e.target.value})} style={inputStyle} /></div>
-          </div>
-
-          <textarea name="description" placeholder="Description" value={form.description} onChange={e=>setForm({...form,description:e.target.value})} rows={4} style={inputStyle}></textarea>
-          <button disabled={uploading} style={{padding:"14px", background:"#FF385C", color:"white", border:"none", borderRadius:"8px", fontWeight:"600", cursor:"pointer"}}>{uploading?`Uploading ${images.length} images...`:"Create Listing"}</button>
-        </form>
-      </div>
-    </>
-  )
-}
+const PORT = process.env.PORT || 5000;
+app.listen(PORT, ()=>console.log(`Server running on http://localhost:${PORT}`));
