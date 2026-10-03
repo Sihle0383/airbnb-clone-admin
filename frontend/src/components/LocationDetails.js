@@ -192,7 +192,7 @@ export default function LocationDetails(){
               </div>
             ))}
           </div>
-          <button style={{marginTop:"15px", padding:"10px 20px", borderRadius:"8px", border:"1px solid black", background:"white", fontWeight:"600"}}>Show all 120 reviews</button>
+          <button style={{marginTop:"15px", padding:"10px 20px", borderRadius:"8px", border:"1px solid black", background:"white", fontWeight:"600", cursor:"pointer"}}>Show all 120 reviews</button>
           <hr style={{margin:"20px 0"}} />
 
           {/* --- ADDED FROM VIDEO: Hosted By Details --- */}

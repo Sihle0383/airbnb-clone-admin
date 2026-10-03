@@ -6,6 +6,8 @@ const multer = require('multer');
 const path = require('path');
 const fs = require('fs');
 
+const path = require('path');
+
 const app = express();
 app.use(cors());
 app.use(express.json());
@@ -168,6 +170,13 @@ app.post("/api/auth/login", (req,res)=>{
     return res.json({user:{email,name:"Jane"}, token:"fake"});
   }
   res.status(401).json({error:"Invalid"});
+});
+
+// Serve frontend in production
+app.use(express.static(path.join(__dirname, '../frontend/build')));
+
+app.get('*', (req, res) => {
+  res.sendFile(path.join(__dirname, '../frontend/build/index.html'));
 });
 
 // --- ADDED: Health check so VS Code doesn't say "lost communication" ---
